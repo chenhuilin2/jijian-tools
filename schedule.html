@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人课表 - 极简工具库</title>
+    <style>
+        :root {
+            --accent: #3a3a3c; 
+            --accent-light: #f2f2f7;
+            --bg: #ffffff;
+            --secondary-bg: #f5f5f7;
+            --text: #1d1d1f;
+            --text-60: rgba(29, 29, 31, 0.6);
+            --radius: 14px;
+            --border: rgba(0,0,0,0.08);
+            --danger-muted: #ae2e24; 
+        }
+
+        body {
+            margin: 0;
+            background: var(--secondary-bg);
+            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header { width: 100%; height: 60px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; justify-content: center; align-items: center; position: fixed; top: 0; z-index: 100; }
+        nav { width: 95vw; display: flex; align-items: center; justify-content: space-between; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 600; }
+        .logo-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 5px; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; gap: 2px; }
+        .logo-icon div { background: white; border-radius: 1px; }
+        .nav-links { display: flex; gap: 12px; list-style: none; margin: 0; padding: 0; }
+        .nav-links a { text-decoration: none; color: var(--text-60); font-size: 0.95rem; padding: 6px 12px; border-radius: 10px; transition: 0.2s; }
+        .nav-links a.active { color: var(--accent); background: rgba(0, 122, 255, 0.1); }
+
+        main { max-width: 1000px; margin: 80px auto 100px; padding: 0 20px; }
+
+        /* 控件置底样式 */
+        .controls {
+            background: var(--bg); padding: 20px; border-radius: 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
+            border: 1px solid var(--border);
+            display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 30px;
+        }
+
+        .btn {
+            background: var(--accent); color: white; padding: 8px 18px;
+            border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500; border: none;
+        }
+
+        .date-input {
+            border: 1px solid var(--border);
+            background: var(--secondary-bg);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--text);
+            outline: none;
+            min-width: 140px;
+        }
+
+        #clear-btn { background: var(--danger-muted); margin-left: auto; }
+
+        .grid-card {
+            background: var(--bg); border-radius: 24px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04); border: 1px solid var(--border);
+        }
+        .grid-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-bottom: 1px solid var(--border); background: #fff; }
+        .term-title { font-weight: 600; font-size: 15px; color: var(--text); }
+
+        #week-select { 
+            border: 1px solid var(--border); 
+            background: var(--secondary-bg); 
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 700; 
+            font-size: 16px; 
+            outline: none; 
+            cursor: pointer; 
+            color: var(--accent);
+        }
+
+        /* 减小单元格宽度 */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 700px; }
+        th { background: #fafafa; color: var(--text-60); font-size: 13px; font-weight: 600; padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
+        td { border: 0.5px solid var(--border); vertical-align: top; height: 130px; padding: 8px; }
+        .time-col { width: 80px; text-align: center; font-size: 12px; color: var(--text-60); font-weight: 600; vertical-align: middle; background: #fafafa; }
+
+        .course-box { 
+            padding: 12px; border-radius: 10px; 
+            background: var(--accent-light); 
+            color: var(--accent);
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            height: calc(100% - 24px);
+            margin-bottom: 4px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .course-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #000; line-height: 1.2; }
+        .course-meta { font-size: 12px; line-height: 1.4; opacity: 0.8; font-weight: 400; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <nav>
+        <a href="./todo.html" class="logo">
+            <div class="logo-icon"><div></div><div></div><div></div><div></div></div>
+            <span>极简工具库</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="./todo.html">待办事项</a></li>
+            <li><a href="./calculator.html">计算器</a></li>
+            <li><a href="./schedule.html" class="active">个人课表</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <div class="grid-card">
+        <div class="grid-header hidden" id="grid-header">
+            <div id="term-display" class="term-title">加载中...</div>
+            <div class="week-selector">
+                <select id="week-select" onchange="jumpWeek(this.value)"></select>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <div id="schedule-view"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label class="btn">选择课表文件<input type="file" id="excel-file" accept=".xls,.xlsx" style="display:none"></label>
+        <span style="font-size: 14px; color: var(--text-60)">
+            开学日期：<input type="date" id="term-start-input" class="date-input" onchange="updateTermStart(this.value)">
+        </span>
+        <!-- <span id="week-info" style="font-size: 13px; color: var(--text-60)">正在计算当前周...</span> -->
+        <button id="clear-btn" class="btn hidden" onclick="clearData()">清空所有数据</button>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    const STORAGE_KEY = 'smart_schedule_v12_bottom'; 
+    const DAYS_NAMES = ['周一', '周二', '周三', '周四', '周五'];
+    
+    let termStartDate = '2026-08-31'; 
+    let currentWeek = 1; 
+    let allData = [];
+    let termTitle = "";
+
+    function calculateCurrentWeek() {
+        const now = new Date();
+        const start = new Date(termStartDate + 'T00:00:00');
+        const diff = now - start;
+        if (diff < 0) return 1;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const week = Math.ceil((days + 1) / 7);
+        return Math.min(Math.max(week, 1), 20);
+    }
+
+    function updateTermStart(val) {
+        if (!val) return;
+        termStartDate = val;
+        currentWeek = calculateCurrentWeek();
+        saveState();
+        render();
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            term: termTitle, 
+            data: allData,
+            termStart: termStartDate
+        }));
+    }
+
+    const parser = {
+        parseWeeks(text) {
+            const match = text.match(/([0-9\-,]+)(?=\(\[周\]\))/);
+            if (!match) return [];
+            const weeks = [];
+            match[1].split(',').forEach(part => {
+                if (part.includes('-')) {
+                    const [s, e] = part.split('-').map(Number);
+                    for (let i = s; i <= e; i++) weeks.push(i);
+                } else {
+                    weeks.push(Number(part));
+                }
+            });
+            return weeks;
+        },
+
+        process(matrix) {
+            const infoRow = matrix[1] ? matrix[1].join(' ') : '';
+            const termMatch = infoRow.match(/\d{4}-\d{4}-\d/);
+            termTitle = termMatch ? termMatch[0] : "我的课表";
+
+            const result = [];
+            for (let r = 2; r < Math.min(matrix.length, 8); r++) {
+                const row = matrix[r];
+                if (!row) continue;
+                const periodLabel = String(row[0] || '').trim();
+
+                for (let d = 0; d < 5; d++) {
+                    const content = String(row[d + 1] || '').trim();
+                    if (content.length < 5) continue;
+
+                    const blocks = content.split(/\n\s*\n/);
+                    blocks.forEach(block => {
+                        const weeks = this.parseWeeks(block);
+                        let cleaned = block
+                            .replace(/\d.*?\(\[周\]\)/g, '')
+                            .replace(/\[\d{2}-\d{2}节\]/g, '')
+                            .replace(/\(高等学校教师.*?\)/g, '')
+                            .replace(/\(.*?\)/g, '')
+                            .trim();
+
+                        const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l !== "");
+                        if (lines.length > 0) {
+                            result.push({
+                                day: DAYS_NAMES[d],
+                                period: periodLabel,
+                                name: lines[0],
+                                meta: lines.slice(1).join('<br>'),
+                                weeks: weeks
+                            });
+                        }
+                    });
+                }
+            }
+            return result;
+        }
+    };
+
+    function render() {
+        document.getElementById('term-start-input').value = termStartDate;
+
+        const view = document.getElementById('schedule-view');
+        if (!allData.length) {
+            view.innerHTML = '<div style="padding:100px; text-align:center; color:#86868b; font-size:14px;">请选择并上传 Excel 课表文件</div>';
+            return;
+        }
+
+        document.getElementById('grid-header').classList.remove('hidden');
+        document.getElementById('term-display').innerText = termTitle;
+        // document.getElementById('week-info').innerText = `当前日期：${new Date().toLocaleDateString()} (第 ${calculateCurrentWeek()} 周)`;
+
+        const select = document.getElementById('week-select');
+        if(select.options.length === 0) {
+            for(let i=1; i<=20; i++) select.add(new Option(`第 ${i} 周`, i));
+        }
+        select.value = currentWeek;
+
+        const periods = [...new Set(allData.map(i => i.period))];
+        let html = `<table><thead><tr><th style="width:80px">时间</th>${DAYS_NAMES.map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>`;
+
+        periods.forEach(p => {
+            html += `<tr><td class="time-col">${p}</td>`;
+            DAYS_NAMES.forEach(day => {
+                const matches = allData.filter(i => 
+                    i.day === day && i.period === p && 
+                    (i.weeks.length === 0 || i.weeks.includes(currentWeek))
+                );
+
+                html += `<td>${matches.map(m => `
+                    <div class="course-box">
+                        <div class="course-name">${m.name}</div>
+                        <div class="course-meta">${m.meta}</div>
+                    </div>
+                `).join('')}</td>`;
+            });
+            html += `</tr>`;
+        });
+        view.innerHTML = html + '</tbody></table>';
+    }
+
+    function jumpWeek(val) { currentWeek = parseInt(val); render(); }
+    function clearData() { if(confirm('确定清空所有本地存储的课表吗？')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+
+    document.getElementById('excel-file').onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+            allData = parser.process(matrix);
+            currentWeek = calculateCurrentWeek();
+            saveState();
+            document.getElementById('clear-btn').classList.remove('hidden');
+            render();
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    window.onload = () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            allData = parsed.data || [];
+            termTitle = parsed.term || "";
+            if (parsed.termStart) termStartDate = parsed.termStart;
+            document.getElementById('clear-btn').classList.remove('hidden');
+        }
+        currentWeek = calculateCurrentWeek();
+        render();
+    };
+</script>
+</body>
+</html>

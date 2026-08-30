@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办事项 - 极简工具库</title>
+    <style>
+        :root {
+            --bg-page: #f5f5f7;
+            --bg-header: rgba(255, 255, 255, 0.8);
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-input: #f2f2f7;
+            --accent: #007AFF;
+            --text-main: #1d1d1f;
+            --text-sec: #86868b;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            --radius: 12px;
+            --border: rgba(0, 0, 0, 0.06);
+            --bg-table-header: #e5e5ea;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-page);
+            font-family: -apple-system, sans-serif;
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            width: 100%;
+            height: 60px;
+            background: var(--bg-header);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav {
+            width: 95vw;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 5px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .logo-icon div {
+            background: white;
+            border-radius: 1px;
+        }
+
+        .app-wrapper {
+            display: flex;
+            height: calc(100vh - 60px);
+            margin-top: 60px;
+        }
+
+        .sidebar-narrow {
+            width: 64px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 15px;
+        }
+
+        .side-icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--text-sec);
+            transition: 0.2s;
+        }
+
+        .side-icon-btn.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--accent);
+        }
+
+        .main-container {
+            flex: 1;
+            overflow: hidden;
+            /* 改为hidden，由内部滚动 */
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .content-card {
+            width: 100%;
+            max-width: 1200px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            height: 30px;
+        }
+
+        .view-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* 修改：输入框放入底部 */
+        .input-box {
+            background: var(--bg-card);
+            padding: 12px 20px;
+            border-radius: 14px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+            /* 顶部阴影 */
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            /* 与上方内容拉开距离 */
+            margin-bottom: 25px;
+        }
+
+        #todo-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 1.1rem;
+            background: transparent;
+        }
+
+        /* 修改：月份切换按钮固定位置 */
+        .calendar-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            /* 改为顶部对齐 */
+            gap: 20px;
+            /* 适当缩小间距 */
+            overflow-y: auto;
+            padding-top: 5px;
+            /* 给顶部留一点点呼吸感 */
+        }
+
+        .nav-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-card);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: 0.3s;
+            color: var(--accent);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            /* 防止随内容高度浮动 */
+            position: sticky;
+            top: 45%;
+        }
+
+        .nav-arrow:hover {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-sec);
+            font-size: 0.95rem;
+            padding: 6px 12px;
+            border-radius: 10px;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .calendar-wrapper {
+            flex: 1;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            height: fit-content;
+        }
+
+        .weekday-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--bg-table-header);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .weekday-item {
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-sec);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--border);
+            gap: 1px;
+        }
+
+        .cal-cell {
+            min-height: 115px;
+            background: #fff;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* 修改：日期字体颜色变深 */
+        .cal-date {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1d1d1f;
+            /* 变黑 */
+            margin-bottom: 8px;
+        }
+
+        .cal-cell.today {
+            background: rgba(0, 122, 255, 0.03);
+        }
+
+        .cal-cell.today .cal-date {
+            color: var(--accent);
+        }
+
+        .cal-cell.other-month {
+            background: #fafafa;
+            opacity: 0.4;
+        }
+
+        .event-chip {
+            font-size: 13px;
+            padding: 5px 8px;
+            background: var(--accent);
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            line-height: 1.4;
+        }
+
+        .event-chip .del-btn {
+            opacity: 0.6;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 5px;
+            font-size: 14px;
+        }
+
+        .event-chip:hover .del-btn {
+            opacity: 1;
+        }
+
+        .list-item {
+            background: #fff;
+            margin-bottom: 10px;
+            padding: 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .check-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <nav>
+            <a href="#" class="logo">
+                <div class="logo-icon">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <span>极简工具库</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="./todo.html" class="active">待办事项</a></li>
+                <li><a href="./calculator.html">计算器</a></li>
+                <li><a href="./schedule.html">个人课表</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="app-wrapper">
+        <aside class="sidebar-narrow">
+            <button class="side-icon-btn active" id="btn-list" onclick="switchView('list')">☰</button>
+            <button class="side-icon-btn" id="btn-month" onclick="switchView('month')">📅</button>
+        </aside>
+
+        <main class="main-container">
+            <div class="content-card">
+                <div class="view-header">
+                    <div class="view-title" id="display-date">4月</div>
+                </div>
+
+                <div class="calendar-container">
+                    <button class="nav-arrow" id="prev-btn" onclick="changeMonth(-1)" title="上个月">〈</button>
+                    <div id="dynamic-content" style="flex:1"></div>
+                    <button class="nav-arrow" id="next-btn" onclick="changeMonth(1)" title="下个月">〉</button>
+                </div>
+
+                <div class="input-box">
+                    <span style="color: var(--accent); font-weight: bold; font-size: 1.2rem;">+</span>
+                    <input type="text" id="todo-input" placeholder="输入示例：6月14日 大学英语四级笔试" autocomplete="off">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let todos = JSON.parse(localStorage.getItem('toolbox-enhanced-todo')) || [];
+        let currentPivot = new Date();
+        let currentView = 'list';
+
+        function save() {
+            localStorage.setItem('toolbox-enhanced-todo', JSON.stringify(todos));
+            render();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.side-icon-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${view}`).classList.add('active');
+
+            const arrows = document.querySelectorAll('.nav-arrow');
+            arrows.forEach(a => a.style.visibility = view === 'list' ? 'hidden' : 'visible');
+
+            render();
+        }
+
+        function changeMonth(step) {
+            currentPivot.setMonth(currentPivot.getMonth() + step);
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('dynamic-content');
+            const titleEl = document.getElementById('display-date');
+            container.innerHTML = '';
+
+            const year = currentPivot.getFullYear();
+            const month = currentPivot.getMonth();
+            titleEl.innerText = `${month + 1}月`;
+
+            if (currentView === 'list') {
+                renderList(container);
+            } else {
+                renderMonth(container, year, month);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            if (e.key === 'ArrowLeft') changeMonth(-1);
+            if (e.key === 'ArrowRight') changeMonth(1);
+        });
+
+        function renderList(container) {
+            if (todos.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:80px; color:var(--text-sec); font-size:1.1rem">暂无日程</div>`;
+                return;
+            }
+            const sorted = [...todos].sort((a, b) => new Date(a.date) - new Date(b.date));
+            sorted.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                <div class="check-circle" onclick="deleteTodo(${t.id})"></div>
+                <div style="flex:1">
+                    <div style="font-weight:500; font-size:1.1rem">${t.text}</div>
+                    <div style="font-size:12px; color:var(--text-sec); margin-top:4px">📅 ${t.date}</div>
+                </div>
+            `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderMonth(container, year, month) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'calendar-wrapper';
+            const weeks = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            let headerHtml = `<div class="weekday-header">` + weeks.map(w => `<div class="weekday-item">${w}</div>`).join('') + `</div>`;
+            let firstDay = new Date(year, month, 1).getDay();
+            if (firstDay === 0) firstDay = 7;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevDaysInMonth = new Date(year, month, 0).getDate();
+            let gridHtml = `<div class="calendar-grid">`;
+            for (let i = firstDay - 2; i >= 0; i--) {
+                gridHtml += `<div class="cal-cell other-month"><div class="cal-date">${prevDaysInMonth - i}</div></div>`;
+            }
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isToday = new Date().toLocaleDateString() === new Date(year, month, d).toLocaleDateString();
+                const dayEvents = todos.filter(t => t.date === dateStr);
+                let eventsHtml = dayEvents.map(e => `
+                <div class="event-chip">
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${e.text}</span>
+                    <span class="del-btn" onclick="deleteTodo(${e.id}, event)">×</span>
+                </div>
+            `).join('');
+                gridHtml += `<div class="cal-cell ${isToday ? 'today' : ''}"><div class="cal-date">${d}</div>${eventsHtml}</div>`;
+            }
+            gridHtml += `</div>`;
+            wrapper.innerHTML = headerHtml + gridHtml;
+            container.appendChild(wrapper);
+        }
+
+        function deleteTodo(id, e) {
+            if (e) e.stopPropagation();
+            todos = todos.filter(t => t.id !== id);
+            save();
+        }
+
+        document.getElementById('todo-input').onkeydown = (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                let inputVal = e.target.value.trim();
+                let finalText = inputVal, finalDateStr = "", now = new Date();
+                const fullDateRegex = /(\d{4})\s*[年\/\-]\s*(\d{1,2})\s*[月\/\-]\s*(\d{1,2})\s*[日]?/;
+                const shortDateRegex = /(\d{1,2})\s*[月\/\-]\s*(\d{1,2})\s*[日]?/;
+                const fullMatch = inputVal.match(fullDateRegex);
+                const shortMatch = inputVal.match(shortDateRegex);
+
+                if (fullMatch) {
+                    const y = parseInt(fullMatch[1]), m = parseInt(fullMatch[2]), d = parseInt(fullMatch[3]);
+                    finalDateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    finalText = inputVal.replace(fullMatch[0], "").trim();
+                } else if (shortMatch) {
+                    const y = currentPivot.getFullYear(), m = parseInt(shortMatch[1]), d = parseInt(shortMatch[2]);
+                    finalDateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    finalText = inputVal.replace(shortMatch[0], "").trim();
+                } else {
+                    finalDateStr = `${currentPivot.getFullYear()}-${String(currentPivot.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                }
+
+                todos.push({ id: Date.now(), text: finalText || "未命名日程", date: finalDateStr });
+                e.target.value = '';
+                save();
+            }
+        };
+
+        switchView('list');
+    </script>
+</body>
+
+</html>
